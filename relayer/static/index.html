@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroVault - Kredit Pertanian Terprogram di NEAR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #0b0f19; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .near-green { color: #00EC97; }
+    .bg-near-green { background-color: #00EC97; }
+    .card-dark { background-color: #161e2e; border: 1px solid #2d3748; }
+  </style>
+</head>
+<body class="text-gray-100 min-h-screen p-4 md:p-8">
+  <div class="max-w-xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+      <div>
+        <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+          🌾 AgroVault <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-mono">NEAR TESTNET</span>
+        </h1>
+        <p class="text-xs text-gray-400">Restricted-Use Micro-Credit for Farmers</p>
+      </div>
+      <span class="text-xs font-mono text-gray-400 bg-gray-900 border border-gray-700 px-2 py-1 rounded">
+        SDK v5.29
+      </span>
+    </div>
+
+    <!-- Farmer Credit Card -->
+    <div class="card-dark rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Dompet Petani Terhubung</p>
+          <p id="txtFarmerId" class="font-mono text-sm font-semibold text-emerald-400 mt-0.5">petani-budi-1792886802.testnet</p>
+        </div>
+        <span id="badgeStatus" class="text-xs bg-emerald-900/60 text-emerald-300 border border-emerald-700 px-2.5 py-1 rounded-full font-semibold">Aktif</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 pt-2">
+        <div class="bg-gray-900/80 rounded-xl p-3 border border-gray-800">
+          <p class="text-xs text-gray-400">Total Plafon Kredit</p>
+          <p id="txtTotalLimit" class="text-xl font-black text-white mt-1">- NEAR</p>
+        </div>
+        <div class="bg-gray-900/80 rounded-xl p-3 border border-gray-800">
+          <p class="text-xs text-gray-400">Kredit Digunakan</p>
+          <p id="txtUsedCredit" class="text-xl font-black text-amber-400 mt-1">- NEAR</p>
+        </div>
+      </div>
+
+      <button onclick="fetchCredit()" class="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs font-semibold text-gray-300 transition flex items-center justify-center gap-1">
+        🔄 Refresh Status On-Chain
+      </button>
+    </div>
+
+    <!-- Purchase Section (Kios Saprotan) -->
+    <div class="card-dark rounded-2xl p-6 shadow-xl space-y-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        🛒 Belanja Saprotan ke Kios Resmi
+      </h2>
+      <p class="text-xs text-gray-400">Dana kredit terkunci dan hanya dapat ditransfer ke vendor/kios pupuk mitra.</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Pilih Sarana Tanam</label>
+          <select id="selItem" onchange="updatePrice()" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+            <option value="1" data-name="Pupuk NPK Unggul (50kg)">Pupuk NPK Unggul (50kg) - 1.0 NEAR</option>
+            <option value="0.5" data-name="Benih Jagung Hibrida F1 (5kg)">Benih Jagung Hibrida F1 (5kg) - 0.5 NEAR</option>
+            <option value="0.3" data-name="Paket Pestisida Nabati">Paket Pestisida Nabati - 0.3 NEAR</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Kios Saprotan Terdaftar (Vendor)</label>
+          <input type="text" id="txtVendor" value="kios-pupuk-1792886802.testnet" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-xs font-mono text-gray-300 focus:outline-none" readonly />
+        </div>
+
+        <button id="btnBuy" onclick="executeSpend()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] font-bold text-gray-950 rounded-xl text-sm transition shadow-lg shadow-emerald-950/40">
+          Bayar Menggunakan Kredit Petani
+        </button>
+      </div>
+
+      <div id="txLog" class="hidden text-xs bg-black/60 p-3 rounded-lg border border-gray-800 font-mono text-gray-300 space-y-1"></div>
+    </div>
+
+    <!-- Info Protocol Footer -->
+    <div class="text-center text-xs text-gray-500 space-y-1">
+      <p>NEAR Protocol Hackathon 2026 • Real-World Money Track</p>
+      <p class="font-mono text-[11px] text-gray-600">Contract: agrovault-1792886368.testnet</p>
+    </div>
+
+  </div>
+
+  <script>
+    const FARMER_ID = "petani-budi-1792886802.testnet";
+
+    function yoctoToNear(yoctoStr) {
+      if (!yoctoStr || yoctoStr === "0") return "0";
+      if (yoctoStr.length <= 24) {
+        return (parseFloat(yoctoStr) / 1e24).toFixed(2);
+      }
+      const whole = yoctoStr.slice(0, -24);
+      const frac = yoctoStr.slice(-24, -22);
+      return `${whole}.${frac}`;
+    }
+
+    async function fetchCredit() {
+      try {
+        const res = await fetch(`/api/v1/credit/${FARMER_ID}`);
+        const json = await res.json();
+        if (json.data) {
+          document.getElementById("txtTotalLimit").innerText = `${yoctoToNear(json.data.total_limit)} NEAR`;
+          document.getElementById("txtUsedCredit").innerText = `${yoctoToNear(json.data.used_credit)} NEAR`;
+          document.getElementById("badgeStatus").innerText = json.data.is_active ? "Aktif" : "Dibekukan";
+        }
+      } catch (e) {
+        console.error("Gagal load status kredit", e);
+      }
+    }
+
+    async function executeSpend() {
+      const btn = document.getElementById("btnBuy");
+      const log = document.getElementById("txLog");
+      const sel = document.getElementById("selItem");
+      const amountNear = parseFloat(sel.value);
+      const itemName = sel.options[sel.selectedIndex].dataset.name;
+      const vendorId = document.getElementById("txtVendor").value;
+
+      // konversi ke yoctoNEAR (x 10^24)
+      const amountYocto = (BigInt(Math.floor(amountNear * 100)) * BigInt("10000000000000000000000")).toString();
+
+      btn.disabled = true;
+      btn.innerText = "Memproses Transaksi On-Chain...";
+      log.classList.remove("hidden");
+      log.innerHTML = `<span class="text-amber-400">⏳ Menandatangani transaksi via Relayer...</span>`;
+
+      try {
+        const res = await fetch("/api/v1/credit/spend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            farmer_id: FARMER_ID,
+            vendor_id: vendorId,
+            amount_yocto: amountYocto,
+            item_name: itemName
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.status === "SUCCESS") {
+          log.innerHTML = `
+            <p class="text-emerald-400 font-bold">✓ Pembelian ${itemName} Berhasil!</p>
+            <p class="text-[11px] text-gray-400">Kredit dipotong ${amountNear} NEAR langsung ke kios pupuk.</p>
+          `;
+          await fetchCredit();
+        } else {
+          log.innerHTML = `<p class="text-rose-400 font-bold">✗ Transaksi Ditolak: ${data.error || "Gagal"}</p>`;
+        }
+      } catch (err) {
+        log.innerHTML = `<p class="text-rose-400">Error jaringan: ${err.message}</p>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Bayar Menggunakan Kredit Petani";
+      }
+    }
+
+    // Auto load saat pertama buka
+    fetchCredit();
+  </script>
+</body>
+</html>

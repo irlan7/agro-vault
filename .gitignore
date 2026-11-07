@@ -1,0 +1,19 @@
+# Rust / Cargo build artifacts
+**/target/
+Cargo.lock
+**/*.rs.bk
+
+# Go binaries & temp
+relayer/agrovault-api
+relayer/bin/
+*.exe
+
+# Credentials & Keys
+.env
+*.key
+credentials/
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
