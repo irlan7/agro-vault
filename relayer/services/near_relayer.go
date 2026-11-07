@@ -107,12 +107,13 @@ return nil, fmt.Errorf("gagal unmarshal struct data kredit: %v", err)
 return &credit, nil
 }
 
-// SpendCreditRelay mengeksekusi transaksi pembelian bibit/pupuk
+// SpendCreditRelay mengeksekusi transaksi via near CLI non-interaktif
 func (s *NearService) SpendCreditRelay(farmerID string, vendorID string, amountYocto string) (string, error) {
+// Memanggil transaksi dengan non-interactive flag yang kompatibel dengan near-cli-rs
 cmd := exec.Command(
 "near", "contract", "call-function", "as-transaction",
 s.cfg.ContractID, "spend_credit_at_vendor",
-"json-args", fmt.Sprintf(`{"vendor_id": "%s", "amount": "%s"}`, vendorID, amountYocto),
+"json-args", fmt.Sprintf(`{"vendor_id":"%s","amount":"%s"}`, vendorID, amountYocto),
 "prepaid-gas", "100.0 Tgas",
 "attached-deposit", "0 NEAR",
 "sign-as", farmerID,
@@ -121,9 +122,26 @@ s.cfg.ContractID, "spend_credit_at_vendor",
 )
 
 out, err := cmd.CombinedOutput()
+outputStr := string(out)
+
+// Jika flag keychain gagal menemukan keyring, jalankan fallback dengan legacy syntax / credentials flag
 if err != nil {
-return "", fmt.Errorf("gagal relay spend credit: %v, output: %s", err, string(out))
+cmdFallback := exec.Command(
+"near", "contract", "call-function", "as-transaction",
+s.cfg.ContractID, "spend_credit_at_vendor",
+"json-args", fmt.Sprintf(`{"vendor_id":"%s","amount":"%s"}`, vendorID, amountYocto),
+"prepaid-gas", "100.0 Tgas",
+"attached-deposit", "0 NEAR",
+"sign-as", farmerID,
+"network-config", "testnet",
+"sign-with-legacy-keychain", "send",
+)
+outFallback, errFallback := cmdFallback.CombinedOutput()
+if errFallback == nil {
+return string(outFallback), nil
+}
+return "", fmt.Errorf("output: %s", outputStr)
 }
 
-return string(out), nil
+return outputStr, nil
 }

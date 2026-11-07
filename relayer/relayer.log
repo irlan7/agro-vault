@@ -1,0 +1,23 @@
+nohup: ignoring input
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /                         --> github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[GIN-debug] HEAD   /                         --> github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] GET    /api/health               --> main.main.func1 (3 handlers)
+[GIN-debug] GET    /api/v1/credit/:farmer_id --> agrovault-backend/handlers.(*Handler).GetCreditStatus-fm (3 handlers)
+[GIN-debug] POST   /api/v1/credit/spend      --> agrovault-backend/handlers.(*Handler).SpendCredit-fm (3 handlers)
+2026/11/07 08:44:11 AgroVault Platform aktif di http://localhost:8890
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8890
+[GIN] 2026/11/07 - 08:44:13 | 200 | 147.872µs |       127.0.0.1 | GET      "/api/health"
+[GIN] 2026/11/07 - 08:45:07 | 304 | 268.246µs |       127.0.0.1 | GET      "/"
+[GIN] 2026/11/07 - 08:45:13 | 200 |    3.28s |       127.0.0.1 | GET      "/api/v1/credit/petani-budi-1792886802.testnet"
+[GIN] 2026/11/07 - 08:46:12 | 200 |    6.63s |       127.0.0.1 | POST     "/api/v1/credit/spend"
+[GIN] 2026/11/07 - 08:46:15 | 200 |    3.22s |       127.0.0.1 | GET      "/api/v1/credit/petani-budi-1792886802.testnet"
